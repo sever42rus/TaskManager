@@ -7,7 +7,7 @@ from users.models import User
 
 class Room(models.Model):
     name = models.CharField(max_length=128, verbose_name='Название комнаты')
-    created_date = models.DateTimeField(default=timezone.now)
+    created_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = 'Комната'
@@ -35,7 +35,7 @@ class RoomColumn(models.Model):
     name = models.CharField(max_length=128, verbose_name='Название колонки')
     room = models.ForeignKey(Room, on_delete=models.CASCADE,
                              verbose_name='Название комнаты', related_name='room_column')
-    created_date = models.DateTimeField(default=timezone.now)
+    created_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return '{} - {} - {}'.format(self.id, self.room, self.name)
@@ -52,7 +52,7 @@ class Task(models.Model):
     room_column = models.ForeignKey(RoomColumn, on_delete=models.CASCADE,
                                     verbose_name='Колонка', related_name='task')
     user_edit = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
-    created_date = models.DateTimeField(default=timezone.now)
+    created_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return '{0} - {1}'.format(self.room_column, self.title)
