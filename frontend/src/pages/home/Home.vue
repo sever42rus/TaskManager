@@ -28,7 +28,7 @@
             class="btn btn-danger"
             v-on:click="backendRoomRemove(room.id)"
           >
-            Удалить колонку
+            Удалить комнату
           </button>
           <div class="card-body">
             <h5 class="card-title">Пользователи в комнате:</h5>
@@ -39,12 +39,9 @@
             >
               - {{ user.user.email }}
             </p>
-            <router-link
-              class="btn btn-primary"
-              :to="{ name: 'room', params: { roomId: String(room.id) } }"
-            >
+            <button class="btn btn-primary" v-on:click="enterRoom(room.id)">
               Зайти
-            </router-link>
+            </button>
           </div>
         </div>
       </div>
@@ -72,6 +69,10 @@ export default {
       } else {
         console.log("errors!");
       }
+    },
+    enterRoom(id) {
+      localStorage.setItem("room", id);
+      this.$router.push({ name: "room" });
     },
     async backendRoomCreate() {
       const response = await fetch(`/task/room/form/`, {

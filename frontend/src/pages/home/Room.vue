@@ -33,7 +33,7 @@
             class="btn btn-danger"
             v-on:click="backendColumnRemove(column.id)"
           >
-            Удалить колонку
+            Удалить
           </button>
           <button
             class="btn btn-primary"
@@ -106,10 +106,8 @@ export default {
     showModal: false,
     modalSource: "",
     modalMethod: "",
+    roomId: localStorage.getItem("room"),
   }),
-  props: {
-    roomId: String,
-  },
   async mounted() {
     await this.reload();
   },
