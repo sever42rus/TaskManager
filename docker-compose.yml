@@ -1,0 +1,38 @@
+version: "3.7"
+
+services:
+    postgres:
+        image: postgres:12
+        ports:
+            - 5432:5432
+        environment:
+            - POSTGRES_PASSWORD=postgres
+            - POSTGRES_USER=postgres
+        volumes:
+            - postgres-volume:/var/lib/postgresql/data
+    backend:
+        build:
+            dockerfile: etc/django.Dockerfile
+            context: .
+        command: bash -c "while true; do echo 'I am alive!'; sleep 3600; done"
+        ports:
+            - 8000:8000
+        environment:
+            - C_FORCE_ROOT=true
+        links:
+            - postgres:postgres.local
+        volumes:
+            - ./backend:/backend
+    frontend:
+        build:
+            dockerfile: etc/vue.Dockerfile
+            context: .
+        command: bash -c "npm run serve"
+        volumes:
+            - ./frontend:/frontend
+            - /frontend/node_modules
+        ports:
+            - 8080:8080
+
+volumes:
+    postgres-volume:
