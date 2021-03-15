@@ -35,7 +35,7 @@ class RoomColumnAdmin(admin.ModelAdmin):
 
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ('room_column', 'title', 'id')
+    list_display = ('order', 'room_column', 'title', 'id')
     pass
 
 

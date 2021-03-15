@@ -22,12 +22,7 @@
     </div>
     <div class="row">
       <div v-for="column in columns" :key="column.id" class="col-4 mt-4 mb-4">
-        <div
-          class="card"
-          @drop="onDrop($event, column)"
-          @dragenter.prevent
-          @dragover.prevent
-        >
+        <div class="card">
           <h4 class="card-header">{{ column.name }}</h4>
           <button
             class="btn btn-danger"
@@ -46,33 +41,51 @@
             Добавить задание
           </button>
           <div class="card-body">
+            <div v-if="!column.task.length">
+              <div
+                @drop="dropColumn($event, column)"
+                @dragenter.prevent
+                @dragover.prevent
+                style="height: 100px"
+              ></div>
+            </div>
             <div
               draggable="true"
               class="m-3"
               v-for="task in column.task"
               :key="task.id"
               @dragstart="startDrag($event, task)"
+              @drop="dropTask($event, task)"
+              @dragenter.prevent
+              @dragover.prevent
             >
               <div class="card">
                 <h5 class="card-header">{{ task.title }}</h5>
-                <button
-                  class="btn btn-danger"
-                  v-on:click="backendTaskRemove(task.id)"
-                >
-                  Удалить
-                </button>
-                <button
-                  class="btn btn-primary"
-                  v-on:click="
-                    showModal = true;
-                    modalMethod = 'PUT';
-                    modalSource = `/task/task/edit/${task.id}/`;
-                  "
-                >
-                  Изменить
-                </button>
+                <p class="card-header">Создано: {{ task.created_date }}</p>
+                <p class="card-header">
+                  Пользователь: {{ task.user_edit.ini }}
+                </p>
+
                 <div class="card-body">
                   <p>{{ task.title }}</p>
+                </div>
+                <div class="card-header d-flex justify-content-center">
+                  <button
+                    class="btn btn-primary m-2"
+                    v-on:click="
+                      showModal = true;
+                      modalMethod = 'PUT';
+                      modalSource = `/task/task/edit/${task.id}/`;
+                    "
+                  >
+                    Изменить
+                  </button>
+                  <button
+                    class="btn btn-danger m-2"
+                    v-on:click="backendTaskRemove(task.id)"
+                  >
+                    Удалить
+                  </button>
                 </div>
               </div>
             </div>
@@ -121,14 +134,16 @@ export default {
       }
     },
 
-    async movingTaskBackend(taskId, columnId) {
-      const response = await fetch(`/task/task/moving/${taskId}/`, {
+    async movingTaskBackend(whatTaskID, whereTaskID, columnId) {
+      const response = await fetch(`/task/task/moving/`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          room_column: columnId,
+          whatTask: whatTaskID,
+          whereTask: whereTaskID,
+          whereColumn: columnId,
         }),
       });
       if (response.ok) {
@@ -142,24 +157,21 @@ export default {
       this.moveTask = task;
     },
 
-    async onDrop(evt, target) {
+    async dropColumn(evt, target) {
       var backendStatus = await this.movingTaskBackend(
         this.moveTask.id,
+        null,
         target.id
       );
       if (backendStatus) this.reload();
-      /* if (backendStatus) {
-        for (var i in this.columns) {
-          for (var j in this.columns[i].task) {
-            if (this.columns[i].task[j].id == this.moveTask.id) {
-              this.columns[i].task.splice(j, 1);
-            }
-          }
-          if (this.columns[i].id == target.id) {
-            this.columns[i].task.push(this.moveTask);
-          }
-        }
-      } */
+    },
+    async dropTask(evt, target) {
+      var backendStatus = await this.movingTaskBackend(
+        this.moveTask.id,
+        target.id,
+        null
+      );
+      if (backendStatus) this.reload();
     },
 
     async backendColumnCreate() {
@@ -199,7 +211,6 @@ export default {
     },
     showModalForm() {
       this.showModal = true;
-      this.modalSource = "/tu/home/";
     },
     hideModalForm() {
       this.showModal = false;

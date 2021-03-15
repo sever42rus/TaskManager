@@ -55,7 +55,6 @@ export default {
     fetch(this.source)
       .then((response) => {
         if (!response.ok) {
-          this.$router.push({ name: "houses" });
           this.$emit("close");
           return 0;
         }

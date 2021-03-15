@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'tasks',
 ]
 
+
 # Модель пользователя
 AUTH_USER_MODEL = 'users.User'
 
@@ -61,6 +62,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+if DEBUG:
+    MIDDLEWARE += ['silk.middleware.SilkyMiddleware', ]
+    INSTALLED_APPS += ['silk', ]
 
 ROOT_URLCONF = 'config.urls'
 
@@ -104,6 +108,8 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+    'DATETIME_FORMAT': "%Y-%m-%d %H:%M",
+    'DATE_FORMAT': '%d.%m.%Y',
 }
 
 # SIMPLE_JWT SETTINGS

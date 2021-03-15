@@ -34,7 +34,7 @@ class TaskSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Task
-        fields = ('id', 'title', 'text', 'user_edit')
+        fields = ('id', 'title', 'text', 'user_edit', 'created_date', 'order')
 
 
 class ColumnSerializer(serializers.ModelSerializer):
@@ -90,8 +90,15 @@ class TaskCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = self.context['request'].user
-        print(user)
+        max_order = Task.objects.filter(
+            room_column=validated_data['room_column']).order_by('-order').first()
+
         instance = super().create(validated_data)
+        try:
+            instance.order = max_order.order + 1
+        except:
+            instance.order = 1
+
         instance.user_edit = user
         instance.save()
         return instance
@@ -102,19 +109,3 @@ class TaskEditSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = ('id', 'title', 'text',)
-
-
-class TaskMovingSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Task
-        fields = ("room_column",)
-
-    def validate_room_column(self, column):
-        user = self.context['request'].user
-        permission = (user.room_permission.all() &
-                      column.room.room_permission.all()).first()
-        if not bool(permission):
-            raise serializers.ValidationError("Колонка не найдена.")
-        else:
-            return column
