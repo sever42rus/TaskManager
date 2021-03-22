@@ -49,28 +49,28 @@ class TaskMovingApiTestCase(APITestCase):
             text='Task 1',
             room_column=self.column_room1_1,
             user_edit=self.user1,
-            order=1,
+            order=5,
         )
         self.task2 = Task.objects.create(
             title='Task 2',
             text='Task 2',
             room_column=self.column_room1_1,
             user_edit=self.user1,
-            order=2,
+            order=6,
         )
         self.task3 = Task.objects.create(
             title='Task 3',
             text='Task 3',
             room_column=self.column_room1_1,
             user_edit=self.user1,
-            order=3,
+            order=7,
         )
         self.task4 = Task.objects.create(
             title='Task 4',
             text='Task 4',
             room_column=self.column_room1_1,
             user_edit=self.user1,
-            order=4,
+            order=8,
         )
 
     def test_moving_task_to_column(self):
@@ -101,6 +101,8 @@ class TaskMovingApiTestCase(APITestCase):
                 first_moving_task = False
             else:
                 self.assertEqual(responce.status_code, 400)
+
+            self.assertEqual(Task.objects.get(pk=self.task1.pk).order, 1)
 
     def test_moving_task_other_room_column(self):
         """

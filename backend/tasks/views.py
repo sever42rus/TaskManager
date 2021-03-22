@@ -1,5 +1,3 @@
-from django.db.models import Avg, OuterRef, Subquery, F
-
 from rest_framework import viewsets, generics, status, views
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -17,6 +15,10 @@ from .serializers import (
     ColumnEditSerializer,
     MovingTaskToColumnSerializer,
     MovingTaskToTaskSerializer
+)
+from .services import (
+    TaskMovingColumn,
+    TaskMovingTask,
 )
 
 
@@ -121,13 +123,7 @@ class MovingTaskToColumn(views.APIView):
             context={'user': request.user}
         )
         if serializer.is_valid():
-            Task.objects.filter(
-                pk=serializer.validated_data['what_task'].id,
-            ).update(
-                room_column=serializer.validated_data['where_column'].id,
-                user_edit=request.user,
-                order=1,
-            )
+            TaskMovingColumn(serializer.validated_data, request).moving()
             return Response(status=status.HTTP_200_OK)
         return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -136,43 +132,12 @@ class MovingTaskToTask(views.APIView):
     permission_classes = [IsAuthenticated, ]
 
     def put(self, request):
-        user = request.user
         serializer = MovingTaskToTaskSerializer(
             data=request.data,
             context={'user': request.user}
         )
         if serializer.is_valid():
-            what_task = serializer.validated_data['what_task']
-            where_task = serializer.validated_data['where_task']
-
-            if what_task.room_column == where_task.room_column:
-                Task.objects.filter(pk=what_task.pk).update(
-                    order=where_task.order)
-                Task.objects.filter(pk=where_task.pk).update(
-                    order=what_task.order)
-            else:
-                what_task_new_order = Task.objects.filter(
-                    room_column=where_task.room_column,
-                    order__gte=where_task.order,
-                )[:2].aggregate(
-                    order_avg=Avg('order')
-                ).setdefault('order_avg')
-                if where_task.order == what_task_new_order:
-                    Task.objects.filter(
-                        pk=what_task.pk,
-                        room_column__room__room_permission__user=user,
-                    ).update(
-                        room_column=where_task.room_column,
-                        order=where_task.order+1
-                    )
-                else:
-                    Task.objects.filter(
-                        pk=what_task.pk,
-                        room_column__room__room_permission__user=user,
-                    ).update(
-                        room_column=where_task.room_column,
-                        order=what_task_new_order
-                    )
+            TaskMovingTask(serializer.validated_data, request).moving()
             return Response(status=status.HTTP_200_OK)
 
         return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
