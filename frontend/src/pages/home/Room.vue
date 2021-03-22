@@ -134,16 +134,16 @@ export default {
       }
     },
 
-    async movingTaskBackend(whatTaskID, whereTaskID, columnId) {
-      const response = await fetch(`/task/task/moving/`, {
+    async movingTaskBackend(whatTaskID, whereTaskID, columnId, source) {
+      const response = await fetch(source, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          whatTask: whatTaskID,
-          whereTask: whereTaskID,
-          whereColumn: columnId,
+          what_task: whatTaskID,
+          where_task: whereTaskID,
+          where_column: columnId,
         }),
       });
       if (response.ok) {
@@ -158,20 +158,22 @@ export default {
     },
 
     async dropColumn(evt, target) {
-      var backendStatus = await this.movingTaskBackend(
+      var ok = await this.movingTaskBackend(
         this.moveTask.id,
         null,
-        target.id
+        target.id,
+        `/task/task/moving/to-column/`
       );
-      if (backendStatus) this.reload();
+      if (ok) this.reload();
     },
     async dropTask(evt, target) {
-      var backendStatus = await this.movingTaskBackend(
+      var ok = await this.movingTaskBackend(
         this.moveTask.id,
         target.id,
-        null
+        null,
+        `/task/task/moving/to-task/`
       );
-      if (backendStatus) this.reload();
+      if (ok) this.reload();
     },
 
     async backendColumnCreate() {

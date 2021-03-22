@@ -53,7 +53,7 @@ class Task(models.Model):
                                     verbose_name='Колонка', related_name='task')
     user_edit = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     created_date = models.DateTimeField(auto_now_add=True)
-    order = models.IntegerField(null=True, verbose_name='Порядок')
+    order = models.FloatField(null=True, verbose_name='Порядок')
 
     def __str__(self):
         return '{0} - {1}'.format(self.room_column, self.title)
@@ -63,5 +63,5 @@ class Task(models.Model):
         verbose_name_plural = 'Задания'
         ordering = ['room_column', 'order', ]
         indexes = [
-            models.Index(fields=['room_column', 'order']),
+            models.Index(fields=['order', 'room_column', ]),
         ]

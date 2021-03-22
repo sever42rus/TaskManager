@@ -83,10 +83,10 @@ class TaskCreateSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         permission = (user.room_permission.all() &
                       column.room.room_permission.all()).first()
-        if not bool(permission):
-            raise serializers.ValidationError("Колонка не найдена.")
-        else:
+        if bool(permission):
             return column
+
+        raise serializers.ValidationError("Колонка не найдена.")
 
     def create(self, validated_data):
         user = self.context['request'].user
@@ -109,3 +109,68 @@ class TaskEditSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = ('id', 'title', 'text',)
+
+
+class MovongTaskToTaskSerializer(serializers.Serializer):
+    what_task = serializers.IntegerField()
+    where_task = serializers.IntegerField()
+
+
+class MovongTaskToColumnSerializer(serializers.Serializer):
+    what_task = serializers.IntegerField()
+    where_column = serializers.IntegerField()
+
+    def validate_what_task(self, value):
+        try:
+            user = self.context['user']
+            return Task.objects.prefetch_related('room_column__room').get(
+                pk=value,
+                room_column__room__room_permission__user=user,
+            )
+        except Task.DoesNotExist:
+            raise serializers.ValidationError("Перемещаемая задача не найдена")
+
+    def validate_where_column(self, value):
+        try:
+            user = self.context['user']
+            column = RoomColumn.objects.select_related('room').get(
+                pk=value,
+                room__room_permission__user=user,
+            )
+            if not column.task.count():
+                return column
+            else:
+                raise serializers.ValidationError(
+                    "Перемещение невозможно, переместите на одио из заданий в данной колонке."
+                )
+        except RoomColumn.DoesNotExist:
+            raise serializers.ValidationError("Колонка не найдена")
+
+    def validate(self, data):
+        if data['what_task'].room_column.room != data['where_column'].room:
+            raise serializers.ValidationError("В комнате нет такой колонки.")
+        return data
+
+
+class MovongTaskToTaskSerializer(serializers.Serializer):
+    what_task = serializers.IntegerField()
+    where_task = serializers.IntegerField()
+
+    def get_task(self, value):
+        user = self.context['user']
+        return Task.objects.get(
+            pk=value,
+            room_column__room__room_permission__user=user,
+        )
+
+    def validate_what_task(self, value):
+        try:
+            return self.get_task(value)
+        except:
+            raise serializers.ValidationError("Перемещаемая задача не найдена")
+
+    def validate_where_task(self, value):
+        try:
+            return self.get_task(value)
+        except:
+            raise serializers.ValidationError("Колонка не найдена")

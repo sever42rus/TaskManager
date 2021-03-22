@@ -1,4 +1,5 @@
-from django.db.models import F
+from django.db.models import Avg, OuterRef, Subquery, F
+
 from rest_framework import viewsets, generics, status, views
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -13,7 +14,9 @@ from .serializers import (
     TaskEditSerializer,
     RoomSerializer,
     ColumnSerializer,
-    ColumnEditSerializer
+    ColumnEditSerializer,
+    MovongTaskToColumnSerializer,
+    MovongTaskToTaskSerializer
 )
 
 
@@ -33,7 +36,10 @@ class FormUserRooms(viewsets.GenericViewSet, generics.CreateAPIView):
     serializer_class = RoomSerializer
 
     def create_form_details(self, request, *args, **kwargs):
-        return Response(RoomSerializer(instance=Room(), context=self.get_serializer_context()).data)
+        return Response(
+            RoomSerializer(instance=Room(),
+                           context=self.get_serializer_context()).data
+        )
 
 
 class EditUserRooms(generics.RetrieveUpdateDestroyAPIView):
@@ -49,7 +55,12 @@ class ListUserRoomColumn(generics.ListAPIView):
     serializer_class = ColumnSerializer
 
     def get_queryset(self):
-        return RoomColumn.objects.prefetch_related('task', 'task__user_edit').filter(room__room_permission__user=self.request.user, room=self.kwargs['room_pk'])
+        return RoomColumn.objects.prefetch_related(
+            'task', 'task__user_edit'
+        ).filter(
+            room__room_permission__user=self.request.user,
+            room=self.kwargs['room_pk']
+        )
 
 
 class FormUserRoomColumn(viewsets.GenericViewSet, generics.CreateAPIView):
@@ -96,65 +107,72 @@ class EditTask(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        return Task.objects.filter(room_column__room__room_permission__user=user)
+        return Task.objects.filter(
+            room_column__room__room_permission__user=user
+        )
 
 
-class MovongTask(views.APIView):
+class MovongTaskToColumn(views.APIView):
+    permission_classes = [IsAuthenticated, ]
+
+    def put(self, request):
+        serializer = MovongTaskToColumnSerializer(
+            data=request.data,
+            context={'user': request.user}
+        )
+        if serializer.is_valid():
+            Task.objects.filter(
+                pk=serializer.validated_data['what_task'].id,
+            ).update(
+                room_column=serializer.validated_data['where_column'].id,
+                user_edit=request.user,
+                order=1,
+            )
+            return Response(status=status.HTTP_200_OK)
+        return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class MovongTaskToTask(views.APIView):
     permission_classes = [IsAuthenticated, ]
 
     def put(self, request):
         user = request.user
-        what_task = request.data.get('whatTask', None)
-        where_task = request.data.get('whereTask', None)
-        where_column = request.data.get('whereColumn', None)
+        serializer = MovongTaskToTaskSerializer(
+            data=request.data,
+            context={'user': request.user}
+        )
+        if serializer.is_valid():
+            what_task = serializer.validated_data['what_task']
+            where_task = serializer.validated_data['where_task']
 
-        try:
-            what_task = Task.objects.get(
-                pk=what_task, room_column__room__room_permission__user=user
-            )
-        except:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        if where_column:
-            where_column = RoomColumn.objects.get(
-                pk=where_column, room__room_permission__user=user
-            )
-
-            Task.objects.filter(
-                room_column=what_task.room_column,
-                order__gt=what_task.order
-            ).update(order=F('order')-1)
-
-            what_task.room_column = where_column
-            what_task.user_edit = request.user
-            what_task.order = 1
-            what_task.save()
-
-        if where_task:
-
-            where_task = Task.objects.get(
-                pk=where_task, room_column__room__room_permission__user=user
-            )
-            if what_task != where_task:
-                if what_task.room_column == where_task.room_column:
-                    what_task.order, where_task.order = where_task.order, what_task.order
-                    what_task.user_edit = request.user
-                    what_task.save()
-                    where_task.save()
+            if what_task.room_column == where_task.room_column:
+                Task.objects.filter(pk=what_task.pk).update(
+                    order=where_task.order)
+                Task.objects.filter(pk=where_task.pk).update(
+                    order=what_task.order)
+            else:
+                what_task_new_order = Task.objects.filter(
+                    room_column=where_task.room_column,
+                    order__gte=where_task.order,
+                )[:2].aggregate(
+                    order_avg=Avg('order')
+                ).setdefault('order_avg')
+                if where_task.order == what_task_new_order:
+                    Task.objects.filter(
+                        pk=what_task.pk,
+                        room_column__room__room_permission__user=user,
+                    ).update(
+                        room_column=where_task.room_column,
+                        order=where_task.order+1
+                    )
                 else:
                     Task.objects.filter(
+                        pk=what_task.pk,
+                        room_column__room__room_permission__user=user,
+                    ).update(
                         room_column=where_task.room_column,
-                        order__gt=where_task.order
-                    ).update(order=F('order')+1)
+                        order=what_task_new_order
+                    )
+            return Response(status=status.HTTP_200_OK)
 
-                    Task.objects.filter(
-                        room_column=what_task.room_column,
-                        order__gt=what_task.order
-                    ).update(order=F('order')-1)
-
-                    what_task.room_column = where_task.room_column  # Переносим таск в целевую колонку
-                    what_task.order = where_task.order + 1  # Назначаем новый номер сортировки
-                    what_task.user_edit = request.user
-                    what_task.save()
-
-        return Response(status=status.HTTP_200_OK)
+        return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
