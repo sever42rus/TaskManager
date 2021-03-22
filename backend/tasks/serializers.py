@@ -111,12 +111,7 @@ class TaskEditSerializer(serializers.ModelSerializer):
         fields = ('id', 'title', 'text',)
 
 
-class MovongTaskToTaskSerializer(serializers.Serializer):
-    what_task = serializers.IntegerField()
-    where_task = serializers.IntegerField()
-
-
-class MovongTaskToColumnSerializer(serializers.Serializer):
+class MovingTaskToColumnSerializer(serializers.Serializer):
     what_task = serializers.IntegerField()
     where_column = serializers.IntegerField()
 
@@ -152,7 +147,7 @@ class MovongTaskToColumnSerializer(serializers.Serializer):
         return data
 
 
-class MovongTaskToTaskSerializer(serializers.Serializer):
+class MovingTaskToTaskSerializer(serializers.Serializer):
     what_task = serializers.IntegerField()
     where_task = serializers.IntegerField()
 

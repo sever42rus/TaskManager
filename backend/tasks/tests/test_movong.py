@@ -3,7 +3,7 @@ from rest_framework.test import APITestCase, APIRequestFactory, force_authentica
 from users.models import User
 
 from tasks.models import Room, RoomColumn, RoomPermission, Task
-from tasks.views import MovongTaskToColumn
+from tasks.views import MovingTaskToColumn
 
 
 class TaskMovingApiTestCase(APITestCase):
@@ -74,9 +74,15 @@ class TaskMovingApiTestCase(APITestCase):
         )
 
     def test_moving_task_to_column(self):
+        """
+        Проверка на перенос в колонку первого и последующего задания
+        Первое задание должно перенестись с ордером 1
+        Последующее не должно перенестись, так как перенос должен быть 
+        Осуществлен на задание которое в колонке уже имеется
+        """
         tasks = [self.task1, self.task2]
         factory = APIRequestFactory()
-        view = MovongTaskToColumn.as_view()
+        view = MovingTaskToColumn.as_view()
 
         first_moving_task = True
         for task in tasks:
@@ -97,9 +103,12 @@ class TaskMovingApiTestCase(APITestCase):
                 self.assertEqual(responce.status_code, 400)
 
     def test_moving_task_other_room_column(self):
+        """
+        Перенос задания между комнатами невозможен
+        """
         tasks = [self.task1, self.task2]
         factory = APIRequestFactory()
-        view = MovongTaskToColumn.as_view()
+        view = MovingTaskToColumn.as_view()
         for task in tasks:
             request = factory.put(
                 '/task/task/moving/to-column/',

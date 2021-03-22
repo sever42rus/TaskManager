@@ -21,6 +21,6 @@ urlpatterns = [
     path('task/form/<int:column_pk>/',
          views.FormTask.as_view({'get': 'create_form_details'})),
     path('task/edit/<int:pk>/', views.EditTask.as_view()),
-    path('task/moving/to-column/', views.MovongTaskToColumn.as_view()),
-    path('task/moving/to-task/', views.MovongTaskToTask.as_view())
+    path('task/moving/to-column/', views.MovingTaskToColumn.as_view()),
+    path('task/moving/to-task/', views.MovingTaskToTask.as_view())
 ]

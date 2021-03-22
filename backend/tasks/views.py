@@ -15,8 +15,8 @@ from .serializers import (
     RoomSerializer,
     ColumnSerializer,
     ColumnEditSerializer,
-    MovongTaskToColumnSerializer,
-    MovongTaskToTaskSerializer
+    MovingTaskToColumnSerializer,
+    MovingTaskToTaskSerializer
 )
 
 
@@ -112,11 +112,11 @@ class EditTask(generics.RetrieveUpdateDestroyAPIView):
         )
 
 
-class MovongTaskToColumn(views.APIView):
+class MovingTaskToColumn(views.APIView):
     permission_classes = [IsAuthenticated, ]
 
     def put(self, request):
-        serializer = MovongTaskToColumnSerializer(
+        serializer = MovingTaskToColumnSerializer(
             data=request.data,
             context={'user': request.user}
         )
@@ -132,12 +132,12 @@ class MovongTaskToColumn(views.APIView):
         return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class MovongTaskToTask(views.APIView):
+class MovingTaskToTask(views.APIView):
     permission_classes = [IsAuthenticated, ]
 
     def put(self, request):
         user = request.user
-        serializer = MovongTaskToTaskSerializer(
+        serializer = MovingTaskToTaskSerializer(
             data=request.data,
             context={'user': request.user}
         )
